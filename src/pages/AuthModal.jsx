@@ -45,7 +45,7 @@ export const AuthModal = ({ isOpen, onClose, defaultMode = 'register' }) => {
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(5, 4, 10, 0.85)',
+      background: 'rgba(5, 5, 10, 0.8)',
       backdropFilter: 'blur(10px)',
       zIndex: 1000,
       display: 'flex',
@@ -58,7 +58,8 @@ export const AuthModal = ({ isOpen, onClose, defaultMode = 'register' }) => {
         width: '100%',
         padding: '36px',
         position: 'relative',
-        borderColor: 'var(--glass-border-pink)'
+        borderColor: 'var(--border-medium)',
+        background: 'var(--bg-surface)'
       }}>
         
         {/* Close Button */}
@@ -68,33 +69,75 @@ export const AuthModal = ({ isOpen, onClose, defaultMode = 'register' }) => {
             position: 'absolute',
             top: '20px',
             right: '20px',
-            background: 'none',
-            color: 'var(--text-muted)'
+            color: 'var(--text-secondary)',
+            padding: '4px'
           }}
+          aria-label="Fechar"
         >
-          <X size={24} />
+          <X size={22} />
         </button>
 
-        {/* Header */}
-        <div style={{ textCenter: 'center', marginBottom: '28px' }}>
+        {/* Header Branding */}
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '14px',
-            background: 'var(--primary-gradient)',
+            width: '44px',
+            height: '44px',
+            borderRadius: '12px',
+            background: 'var(--primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 12px auto'
+            margin: '0 auto 14px auto',
+            boxShadow: 'var(--shadow-glow)'
           }}>
-            <Sparkles size={24} color="#ffffff" />
+            <Sparkles size={22} color="#ffffff" />
           </div>
-          <h3 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#ffffff', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: '700', marginBottom: '6px' }}>
             {isRegister ? 'Criar Sua Conta' : 'Entrar no FitLady'}
-          </h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '4px' }}>
-            {isRegister ? 'Cadastre-se para liberar serviços e pacotes' : 'Acesse seu progresso e treinos'}
+          </h2>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            {isRegister ? 'Acesse planos, anamnese e treinos personalizados' : 'Gerencie seu progresso e evolução'}
           </p>
+        </div>
+
+        {/* Tab Switcher */}
+        <div style={{
+          display: 'flex',
+          background: 'var(--bg-elevated)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '4px',
+          marginBottom: '24px'
+        }}>
+          <button
+            type="button"
+            onClick={() => { setIsRegister(true); setErrorMsg(''); }}
+            style={{
+              flex: 1,
+              padding: '8px',
+              borderRadius: 'var(--radius-xs)',
+              fontSize: '0.88rem',
+              fontWeight: '600',
+              background: isRegister ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              color: isRegister ? '#ffffff' : 'var(--text-secondary)'
+            }}
+          >
+            Cadastrar
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsRegister(false); setErrorMsg(''); }}
+            style={{
+              flex: 1,
+              padding: '8px',
+              borderRadius: 'var(--radius-xs)',
+              fontSize: '0.88rem',
+              fontWeight: '600',
+              background: !isRegister ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              color: !isRegister ? '#ffffff' : 'var(--text-secondary)'
+            }}
+          >
+            Já tenho conta
+          </button>
         </div>
 
         {errorMsg && (
@@ -102,24 +145,24 @@ export const AuthModal = ({ isOpen, onClose, defaultMode = 'register' }) => {
             background: 'rgba(239, 68, 68, 0.15)',
             border: '1px solid rgba(239, 68, 68, 0.4)',
             color: '#f87171',
-            padding: '12px 16px',
+            padding: '12px 14px',
             borderRadius: 'var(--radius-sm)',
-            fontSize: '0.88rem',
+            fontSize: '0.85rem',
             marginBottom: '20px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
           }}>
-            <AlertCircle size={18} />
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
             <span>{errorMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Email field */}
+          {/* Email */}
           <div className="form-group">
             <label className="form-label">
-              <Mail size={16} color="var(--primary-pink)" /> E-mail
+              <Mail size={15} color="var(--primary)" /> E-mail
             </label>
             <input 
               type="email" 
@@ -131,10 +174,10 @@ export const AuthModal = ({ isOpen, onClose, defaultMode = 'register' }) => {
             />
           </div>
 
-          {/* Password field */}
+          {/* Password */}
           <div className="form-group">
             <label className="form-label">
-              <Lock size={16} color="var(--primary-pink)" /> Senha
+              <Lock size={15} color="var(--primary)" /> Senha
             </label>
             <input 
               type="password" 
@@ -146,11 +189,11 @@ export const AuthModal = ({ isOpen, onClose, defaultMode = 'register' }) => {
             />
           </div>
 
-          {/* Confirm Password field (if register mode) */}
+          {/* Confirm Password (if registering) */}
           {isRegister && (
             <div className="form-group">
               <label className="form-label">
-                <Lock size={16} color="var(--primary-pink)" /> Confirmar Senha
+                <Lock size={15} color="var(--primary)" /> Confirmar Senha
               </label>
               <input 
                 type="password" 
@@ -163,31 +206,31 @@ export const AuthModal = ({ isOpen, onClose, defaultMode = 'register' }) => {
             </div>
           )}
 
-          {/* Password Validation Requirements (for Cadastro) */}
+          {/* Password Validation Guidelines (Cadastro) */}
           {isRegister && (
             <div style={{
-              background: 'rgba(15, 12, 27, 0.6)',
-              padding: '14px',
+              background: 'var(--bg-elevated)',
+              padding: '12px 14px',
               borderRadius: 'var(--radius-sm)',
               marginBottom: '20px',
-              border: '1px solid var(--glass-border)',
-              fontSize: '0.82rem'
+              border: '1px solid var(--border-subtle)',
+              fontSize: '0.8rem'
             }}>
-              <div style={{ fontWeight: '600', marginBottom: '8px', color: 'var(--text-main)' }}>
-                Requisitos da senha:
+              <div style={{ fontWeight: '600', marginBottom: '6px', color: 'var(--text-main)' }}>
+                Requisitos de segurança:
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ color: hasMin8 ? '#10b981' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={14} color={hasMin8 ? '#10b981' : '#64748b'} /> Pelo menos 8 caracteres
+                <div style={{ color: hasMin8 ? 'var(--secondary-green)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Check size={13} color={hasMin8 ? 'var(--secondary-green)' : '#64748b'} /> Mínimo de 8 caracteres
                 </div>
-                <div style={{ color: hasUpper ? '#10b981' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={14} color={hasUpper ? '#10b981' : '#64748b'} /> Pelo menos 1 letra maiúscula (A-Z)
+                <div style={{ color: hasUpper ? 'var(--secondary-green)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Check size={13} color={hasUpper ? 'var(--secondary-green)' : '#64748b'} /> Pelo menos 1 letra maiúscula (A-Z)
                 </div>
-                <div style={{ color: hasSpecial ? '#10b981' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={14} color={hasSpecial ? '#10b981' : '#64748b'} /> Pelo menos 1 caractere especial (!@#$...)
+                <div style={{ color: hasSpecial ? 'var(--secondary-green)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Check size={13} color={hasSpecial ? 'var(--secondary-green)' : '#64748b'} /> Pelo menos 1 caractere especial (!@#$...)
                 </div>
-                <div style={{ color: isMatch ? '#10b981' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={14} color={isMatch ? '#10b981' : '#64748b'} /> Senhas iguais
+                <div style={{ color: isMatch ? 'var(--secondary-green)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Check size={13} color={isMatch ? 'var(--secondary-green)' : '#64748b'} /> Senhas conferem
                 </div>
               </div>
             </div>
@@ -196,19 +239,11 @@ export const AuthModal = ({ isOpen, onClose, defaultMode = 'register' }) => {
           <button 
             type="submit" 
             className="btn-primary" 
-            style={{ width: '100%', padding: '14px', marginTop: '10px' }}
+            style={{ width: '100%', padding: '13px', marginTop: '6px' }}
           >
             {isRegister ? 'Concluir Cadastro' : 'Entrar na Conta'}
           </button>
         </form>
-
-        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          {isRegister ? (
-            <span>Já tem uma conta? <button onClick={() => setIsRegister(false)} style={{ background: 'none', color: 'var(--primary-pink)', fontWeight: '700' }}>Fazer login</button></span>
-          ) : (
-            <span>Não tem conta? <button onClick={() => setIsRegister(true)} style={{ background: 'none', color: 'var(--primary-pink)', fontWeight: '700' }}>Cadastre-se</button></span>
-          )}
-        </div>
 
       </div>
     </div>
