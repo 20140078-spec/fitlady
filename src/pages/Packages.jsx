@@ -1,246 +1,212 @@
-import React, { useState } from 'react';
-import { Check, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
+import React from 'react';
+import { Check, ArrowRight, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Reveal } from '../components/Reveal';
+import { useInView, useCountUp } from '../hooks/useInView';
 
-export const Packages = ({ setActiveTab, openAuthModal }) => {
-  const { user, purchasePackage } = useAuth();
-  const [openFaq, setOpenFaq] = useState(null);
+const Price = ({ amount, active, dark }) => {
+  const n = useCountUp(amount, active, 1100);
+  return (
+    <div style={{
+      fontSize: '2.5rem',
+      fontWeight: 600,
+      marginBottom: '1.5rem',
+      fontFamily: "'DM Sans', system-ui, sans-serif",
+      letterSpacing: '-0.03em',
+      color: dark ? '#fff' : '#000'
+    }}>
+      R$ {n},00
+    </div>
+  );
+};
+
+const PackageCard = ({ pkg, index, onSelect }) => {
+  const [ref, inView] = useInView();
+  const amounts = { inicial: 39, intermediario: 47, avancado: 55 };
+
+  return (
+    <Reveal delay={Math.min(index + 1, 4)} style={{ height: '100%' }}>
+      <div
+        ref={ref}
+        className="soft-card"
+        style={{
+          position: 'relative',
+          background: pkg.popular ? '#000' : '#FAFAF8',
+          color: pkg.popular ? '#fff' : '#000',
+          borderRadius: '32px',
+          padding: '2.4rem 1.85rem',
+          border: pkg.popular ? 'none' : '1px solid rgba(0,0,0,0.07)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          height: '100%',
+          boxShadow: pkg.popular ? '0 28px 60px -28px rgba(0,0,0,0.45)' : undefined
+        }}
+      >
+        {pkg.popular && (
+          <span style={{
+            position: 'absolute',
+            top: '-12px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#E5007E',
+            color: '#fff',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            padding: '5px 16px',
+            borderRadius: '9999px',
+            whiteSpace: 'nowrap'
+          }}>
+            RECOMENDADO
+          </span>
+        )}
+
+        <div>
+          <h2 style={{
+            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontSize: '1.75rem',
+            marginBottom: '0.5rem',
+            letterSpacing: '-0.02em'
+          }}>
+            {pkg.name}
+          </h2>
+          <Price amount={amounts[pkg.id]} active={inView} dark={pkg.popular} />
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '2rem', padding: 0 }}>
+            {pkg.features.map((f) => (
+              <li key={f} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '0.95rem', lineHeight: 1.45 }}>
+                <Check size={16} color={pkg.popular ? '#ABFE2A' : '#4FB919'} style={{ flexShrink: 0, marginTop: 3 }} />
+                <span style={{ color: pkg.popular ? 'rgba(255,255,255,0.85)' : '#6F6F6F' }}>{f}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <button
+          onClick={() => onSelect(pkg)}
+          style={{
+            width: '100%',
+            padding: '1rem',
+            borderRadius: '9999px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            background: pkg.popular ? '#E5007E' : '#000',
+            color: '#fff',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'transform 0.2s ease'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >
+          Escolher {pkg.name} <ArrowRight size={16} />
+        </button>
+      </div>
+    </Reveal>
+  );
+};
+
+export const Packages = ({ setActiveTab, accessMessage, clearAccessMessage }) => {
+  const { user, purchasePackage, enterAsGuest } = useAuth();
 
   const handleSelectPackage = (pkg) => {
-    if (!user) {
-      openAuthModal();
-    } else {
-      purchasePackage(pkg);
-      setActiveTab('questionario');
-    }
+    if (!user) enterAsGuest('Aluna FitLady');
+    purchasePackage(pkg);
+    if (clearAccessMessage) clearAccessMessage();
+    setActiveTab('questionario');
   };
 
   const packageList = [
     {
-      id: 'mensal',
-      name: 'Plano Start',
-      period: 'mês',
-      price: 'R$ 89,90',
-      badge: 'Mensal Flexível',
-      isPopular: false,
+      id: 'inicial',
+      name: 'Pacote inicial',
+      features: ['Direito aos treinos montados', 'Direito à dieta personalizada'],
+      popular: false
+    },
+    {
+      id: 'intermediario',
+      name: 'Pacote intermediário',
       features: [
-        'Anamnese física e nutricional digital',
-        'Ficha de Treino A/B individualizada',
-        'Plano de macronutrientes com tabela de substituição',
-        'Acesso completo ao app web FitLady',
-        'Suporte por e-mail em até 48h',
-        'Sem fidelidade: cancele quando quiser'
-      ]
+        'Treinos montados',
+        'Dieta personalizada',
+        'Uso das melhores versões de apps de auxílio, como o Strava'
+      ],
+      popular: true
     },
     {
-      id: 'semestral',
-      name: 'Plano Pro Semestral',
-      period: 'mês',
-      price: 'R$ 69,90',
-      priceNote: 'Cobrado semestralmente (R$ 419,40)',
-      badge: 'Mais Recomendado',
-      isPopular: true,
+      id: 'avancado',
+      name: 'Pacote avançado',
       features: [
-        'Tudo do Plano Start incluso',
-        'Ficha completa A/B/C/D personalizada',
-        'Revisão e evolução de cargas a cada 15 dias',
-        'Sincronização com Apple Watch, Garmin e Strava',
-        'Desconto VIP nas redes Smart Fit e Iron Berg',
-        'Canal direto no WhatsApp com nutricionista'
-      ]
-    },
-    {
-      id: 'anual',
-      name: 'Plano Anual VIP',
-      period: 'mês',
-      price: 'R$ 49,90',
-      priceNote: 'Cobrado anualmente (R$ 598,80)',
-      badge: 'Melhor Custo-Benefício',
-      isPopular: false,
-      features: [
-        'Tudo do Plano Pro incluso',
-        'Acompanhamento biomecânico contínuo por vídeo',
-        'Ajustes ilimitados de cardápio e rotina',
-        'Kit de Boas-Vindas FitLady entregue na sua residência',
-        'Acesso irrestrito a todos os e-books e guias de receitas',
-        'Atendimento prioritário no WhatsApp 7 dias por semana'
-      ]
-    }
-  ];
-
-  const faqs = [
-    {
-      q: 'Como funciona a elaboração do meu treino e plano alimentar?',
-      a: 'Assim que você escolhe seu plano e conclui seu cadastro, você preenche a Anamnese Inicial (5 minutos). Nossos profissionais analisam seu histórico, objetivo, frequência e eventuais limitações articulares para montar sua rotina sob medida.'
-    },
-    {
-      q: 'Posso treinar somente em casa ou preciso de academia?',
-      a: 'Você escolhe! Nosso sistema adapta sua ficha de treino exatamente para o local onde você treina — seja com equipamentos completos de academia ou em casa com halteres, elásticos e peso do corpo.'
-    },
-    {
-      q: 'Como utilizo o desconto nas academias Smart Fit e Iron Berg?',
-      a: 'Alunas dos planos Semestral e Anual recebem um voucher digital com código de ativação em seu painel da aluna, válido para apresentar nas unidades parceiras e garantir as isenções e descontos combinados.'
-    },
-    {
-      q: 'Existe período de fidelidade ou multa de cancelamento?',
-      a: 'Não há fidelidade no plano mensal. Nos planos semestral e anual, você tem garantia incondicional de 7 dias com reembolso integral caso decida não continuar.'
+        'Treinos montados',
+        'Dieta personalizada',
+        'Apps de auxílio (ex.: Strava)',
+        'Descontos em academias como Smart Fit e Iron Berg'
+      ],
+      popular: false
     }
   ];
 
   return (
-    <div className="container" style={{ padding: '60px 24px' }}>
-      
-      {/* Section Header */}
-      <div className="section-header">
-        <span className="badge badge-pink">Investimento Consciente</span>
-        <h1 className="section-title">Escolha o Plano Ideal Para Sua Evolução</h1>
-        <p className="section-subtitle">
-          Planos transparentes com acompanhamento profissional contínuo. Libere sua anamnese e comece hoje mesmo.
-        </p>
-      </div>
-
-      {/* Packages Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '28px',
-        marginBottom: '70px',
-        alignItems: 'stretch'
-      }}>
-        {packageList.map((pkg) => (
-          <div 
-            key={pkg.id} 
-            className="glass-card" 
-            style={{
-              padding: '36px 30px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              position: 'relative',
-              borderColor: pkg.isPopular ? 'var(--primary)' : 'var(--border-subtle)',
-              boxShadow: pkg.isPopular ? 'var(--shadow-glow)' : 'var(--shadow-card)'
-            }}
-          >
-            {pkg.isPopular && (
-              <div style={{
-                position: 'absolute',
-                top: '-13px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: 'var(--primary)',
-                color: '#fff',
-                fontWeight: '700',
-                fontSize: '0.78rem',
-                letterSpacing: '0.04em',
-                padding: '4px 16px',
-                borderRadius: 'var(--radius-full)',
-                boxShadow: 'var(--shadow-glow)'
-              }}>
-                MAIS POPULAR
-              </div>
-            )}
-
-            <div>
-              <div style={{ marginBottom: '16px' }}>
-                <span className={pkg.isPopular ? 'badge badge-pink' : pkg.id === 'anual' ? 'badge badge-lime' : 'badge badge-green'}>
-                  {pkg.badge}
-                </span>
-              </div>
-
-              <h2 style={{ fontSize: '1.45rem', fontWeight: '700', color: '#fff', marginBottom: '8px' }}>
-                {pkg.name}
-              </h2>
-
-              <div style={{ marginBottom: '24px' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}>{pkg.price}</span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.92rem' }}> / {pkg.period}</span>
-                {pkg.priceNote && (
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    {pkg.priceNote}
-                  </div>
-                )}
-              </div>
-
-              <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', marginBottom: '24px' }} />
-
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
-                {pkg.features.map((feat, idx) => (
-                  <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '0.92rem', color: '#e2e8f0' }}>
-                    <Check size={16} color={pkg.isPopular ? "var(--primary)" : "var(--secondary-green)"} style={{ flexShrink: 0, marginTop: '3px' }} />
-                    <span style={{ lineHeight: '1.45' }}>{feat}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <button 
-              onClick={() => handleSelectPackage(pkg)} 
-              className={pkg.isPopular ? 'btn-primary' : 'btn-secondary'} 
-              style={{ width: '100%', padding: '14px', fontSize: '0.95rem' }}
-            >
-              Assinar {pkg.name} <ArrowRight size={16} />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* FREQUENTLY ASKED QUESTIONS ACCORDION */}
-      <div style={{ maxWidth: '780px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '1.8rem', marginBottom: '8px' }}>Dúvidas Frequentes</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-            Tudo o que você precisa saber antes de iniciar sua assinatura.
+    <div style={{ background: '#fff', padding: '4.5rem 24px 6rem' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <Reveal style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <p style={{
+            color: '#E5007E',
+            fontSize: '0.78rem',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+            marginBottom: '1rem'
+          }}>
+            Pacotes
           </p>
-        </div>
+          <h1 style={{
+            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontSize: 'clamp(2.4rem, 5vw, 3.6rem)',
+            letterSpacing: '-0.03em',
+            lineHeight: 1.05,
+            color: '#000',
+            marginBottom: '0.75rem'
+          }}>
+            Compra de pacotes
+          </h1>
+          <p style={{ color: '#6F6F6F', fontSize: '1.05rem' }}>
+            Escolha o pacote com os benefícios que fazem sentido para você.
+          </p>
+        </Reveal>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {faqs.map((faq, index) => {
-            const isOpen = openFaq === index;
-            return (
-              <div 
-                key={index} 
-                style={{
-                  background: 'var(--bg-card)',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-subtle)',
-                  overflow: 'hidden'
-                }}
-              >
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : index)}
-                  style={{
-                    width: '100%',
-                    padding: '18px 20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    textAlign: 'left',
-                    color: '#ffffff',
-                    fontWeight: '600',
-                    fontSize: '0.98rem'
-                  }}
-                >
-                  <span>{faq.q}</span>
-                  {isOpen ? <ChevronUp size={18} color="var(--primary)" /> : <ChevronDown size={18} color="var(--text-secondary)" />}
-                </button>
-                {isOpen && (
-                  <div style={{
-                    padding: '0 20px 20px 20px',
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.92rem',
-                    lineHeight: '1.65',
-                    borderTop: '1px solid var(--border-subtle)',
-                    paddingTop: '14px'
-                  }}>
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        {accessMessage && (
+          <Reveal>
+            <div style={{
+              maxWidth: '640px',
+              margin: '0 auto 2.5rem',
+              padding: '1.5rem 1.75rem',
+              textAlign: 'center',
+              background: 'rgba(229,0,126,0.06)',
+              border: '1px solid rgba(229,0,126,0.25)',
+              borderRadius: '24px'
+            }}>
+              <Info size={22} color="#E5007E" style={{ marginBottom: 8 }} />
+              <p style={{ margin: 0, lineHeight: 1.65, color: '#000' }}>{accessMessage}</p>
+            </div>
+          </Reveal>
+        )}
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '1.5rem',
+          alignItems: 'stretch'
+        }}>
+          {packageList.map((pkg, i) => (
+            <PackageCard key={pkg.id} pkg={pkg} index={i} onSelect={handleSelectPackage} />
+          ))}
         </div>
       </div>
-
     </div>
   );
 };

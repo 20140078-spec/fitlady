@@ -1,263 +1,183 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles, UserCheck, LogOut, Activity, ShoppingBag, Menu, X } from 'lucide-react';
+import { FITLADY_SLOGAN } from './Logo';
+import { LogOut, Menu, X } from 'lucide-react';
 
-export const Header = ({ activeTab, setActiveTab, openAuthModal }) => {
-  const { user, isSubscribed, logoutUser, cartItems } = useAuth();
+export const Header = ({ activeTab, setActiveTab }) => {
+  const { user, logoutUser } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const isHome = activeTab === 'home';
 
   const handleNavClick = (tab) => {
     setActiveTab(tab);
     setMobileMenuOpen(false);
   };
 
+  const isActive = (tabs) => (Array.isArray(tabs) ? tabs.includes(activeTab) : activeTab === tabs);
+
+  const navColor = (active) => {
+    if (isHome) return active ? '#FFFFFF' : 'rgba(255,255,255,0.72)';
+    return active ? '#000000' : '#6F6F6F';
+  };
+
+  const navBtn = (active) => ({
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    color: navColor(active),
+    transition: 'color 0.2s ease',
+    fontFamily: "'DM Sans', system-ui, sans-serif",
+    textShadow: isHome ? '0 1px 12px rgba(0,0,0,0.35)' : 'none'
+  });
+
   return (
-    <header className="glass-nav">
-      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '76px' }}>
-        
-        {/* Brand Identity */}
-        <div 
-          onClick={() => handleNavClick('home')} 
-          style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', userSelect: 'none' }}
+    <header
+      style={{
+        position: isHome ? 'absolute' : 'sticky',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 60,
+        background: 'transparent',
+        borderBottom: 'none'
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '80rem',
+          margin: '0 auto',
+          padding: '1.15rem 1.75rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem'
+        }}
+      >
+        <button
+          onClick={() => handleNavClick('home')}
+          title={FITLADY_SLOGAN}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontSize: '1.85rem',
+            letterSpacing: '-0.02em',
+            color: isHome ? '#FFFFFF' : '#000000',
+            lineHeight: 1,
+            textShadow: isHome ? '0 2px 16px rgba(0,0,0,0.4)' : 'none'
+          }}
         >
-          <div style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
-            background: 'var(--primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: 'var(--shadow-glow)'
-          }}>
-            <Sparkles size={20} color="#ffffff" />
-          </div>
-          <div>
-            <span style={{ fontSize: '1.45rem', fontWeight: '800', letterSpacing: '-0.03em', color: '#ffffff' }}>
-              Fit<span style={{ color: 'var(--primary)' }}>Lady</span>
-            </span>
-            <div style={{ fontSize: '0.62rem', letterSpacing: '0.12em', color: 'var(--text-secondary)', textTransform: 'uppercase', marginTop: '-3px' }}>
-              Feminine Performance
-            </div>
-          </div>
-        </div>
+          Fit<span style={{ color: '#E5007E' }}>Lady</span>
+          <sup style={{ fontSize: '0.7rem', color: '#E5007E', marginLeft: '2px' }}>®</sup>
+        </button>
 
-        {/* Desktop Navigation Links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '6px' }} className="desktop-nav">
-          <button 
-            onClick={() => handleNavClick('home')}
-            className={`tab-pill ${activeTab === 'home' ? 'active' : ''}`}
-          >
-            Início
-          </button>
-          
-          <button 
-            onClick={() => handleNavClick('servicos')}
-            className={`tab-pill ${activeTab === 'servicos' ? 'active' : ''}`}
-          >
-            Serviços
-          </button>
-
-          <button 
-            onClick={() => handleNavClick('produtos')}
-            className={`tab-pill ${activeTab === 'produtos' ? 'active' : ''}`}
-            style={{ position: 'relative' }}
-          >
-            Produtos
-            {totalCartCount > 0 && (
-              <span style={{
-                marginLeft: '6px',
-                background: 'var(--primary)',
-                color: '#fff',
-                borderRadius: '10px',
-                padding: '2px 7px',
-                fontSize: '0.72rem',
-                fontWeight: '700'
-              }}>
-                {totalCartCount}
-              </span>
-            )}
-          </button>
-
-          <button 
-            onClick={() => handleNavClick('pacotes')}
-            className={`tab-pill ${activeTab === 'pacotes' ? 'active' : ''}`}
-          >
-            Planos
-          </button>
-
-          {/* Conditional Link: "Seu Progresso" - Visible after signup & package purchase */}
-          {isSubscribed && (
-            <button 
+        <nav className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '1.6rem' }}>
+          <button onClick={() => handleNavClick('home')} style={navBtn(isActive('home'))}>Início</button>
+          <button onClick={() => handleNavClick('servicos')} style={navBtn(isActive(['servicos', 'servico-treino', 'servico-nutricao', 'questionario']))}>Serviços</button>
+          <button onClick={() => handleNavClick('produtos')} style={navBtn(isActive('produtos'))}>Produtos</button>
+          <button onClick={() => handleNavClick('pacotes')} style={navBtn(isActive('pacotes'))}>Compra de pacotes</button>
+          {user && (
+            <button
               onClick={() => handleNavClick('progresso')}
-              className={`tab-pill ${activeTab === 'progresso' ? 'active' : ''}`}
-              style={{
-                color: 'var(--primary)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
+              style={{ ...navBtn(true), color: '#E5007E' }}
             >
-              <Activity size={15} />
-              Meu Progresso
+              Seu progresso
             </button>
           )}
         </nav>
 
-        {/* Right Action (Top Right): Cadastrar / Entrar / User */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Quick Cart Button */}
-          <button
-            onClick={() => handleNavClick('produtos')}
-            title="Ver Sacola"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--border-subtle)',
-              color: totalCartCount > 0 ? 'var(--primary)' : 'var(--text-secondary)',
-              position: 'relative'
-            }}
-          >
-            <ShoppingBag size={18} />
-            {totalCartCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-4px',
-                right: '-4px',
-                background: 'var(--primary)',
-                color: '#fff',
-                borderRadius: '50%',
-                width: '18px',
-                height: '18px',
-                fontSize: '0.7rem',
-                fontWeight: '700',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                {totalCartCount}
-              </span>
-            )}
-          </button>
-
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 14px',
-                borderRadius: 'var(--radius-full)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-subtle)',
-                fontSize: '0.85rem'
-              }}>
-                <UserCheck size={15} color="var(--primary)" />
-                <span style={{ fontWeight: '600', color: '#fff' }}>{user.name}</span>
-              </div>
-              <button 
-                onClick={logoutUser}
-                title="Sair da conta"
-                className="btn-ghost"
-                style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span
+                className="hide-mobile"
+                style={{
+                  fontSize: '0.85rem',
+                  color: isHome ? 'rgba(255,255,255,0.8)' : '#6F6F6F',
+                  textShadow: isHome ? '0 1px 10px rgba(0,0,0,0.35)' : 'none'
+                }}
               >
-                <LogOut size={15} />
-                <span className="hide-mobile">Sair</span>
+                {user.name}
+              </span>
+              <button
+                onClick={logoutUser}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  background: 'transparent',
+                  border: 'none',
+                  color: isHome ? 'rgba(255,255,255,0.8)' : '#6F6F6F',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem'
+                }}
+              >
+                <LogOut size={15} /> Sair
               </button>
             </div>
           ) : (
-            <button 
-              onClick={openAuthModal}
-              className="btn-primary"
-              style={{ padding: '9px 20px', fontSize: '0.9rem' }}
+            <button
+              onClick={() => handleNavClick('pacotes')}
+              style={{
+                background: isHome ? '#E5007E' : '#000',
+                color: '#fff',
+                borderRadius: '9999px',
+                padding: '0.6rem 1.4rem',
+                fontSize: '0.875rem',
+                border: 'none',
+                cursor: 'pointer'
+              }}
             >
-              Entrar
+              Começar agora
             </button>
           )}
 
-          {/* Mobile Menu Hamburger */}
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="mobile-toggle"
             aria-label="Menu"
             style={{
               display: 'none',
-              padding: '8px',
-              color: 'var(--text-main)',
-              borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255, 255, 255, 0.05)'
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: isHome ? '#fff' : '#000',
+              padding: '0.35rem'
             }}
           >
             {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
-
       </div>
 
-      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div style={{
-          background: 'var(--bg-surface)',
-          borderBottom: '1px solid var(--border-medium)',
-          padding: '16px 24px 24px 24px',
+          borderTop: 'none',
+          background: isHome ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.97)',
+          padding: '1rem 1.5rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px'
+          gap: '0.5rem',
+          backdropFilter: 'blur(12px)'
         }}>
-          <button 
-            onClick={() => handleNavClick('home')}
-            style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 'var(--radius-sm)', background: activeTab === 'home' ? 'var(--bg-elevated)' : 'transparent', color: activeTab === 'home' ? 'var(--primary)' : 'var(--text-main)', fontWeight: '600' }}
-          >
-            Início
-          </button>
-          <button 
-            onClick={() => handleNavClick('servicos')}
-            style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 'var(--radius-sm)', background: activeTab === 'servicos' ? 'var(--bg-elevated)' : 'transparent', color: activeTab === 'servicos' ? 'var(--primary)' : 'var(--text-main)', fontWeight: '600' }}
-          >
-            Serviços
-          </button>
-          <button 
-            onClick={() => handleNavClick('produtos')}
-            style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 'var(--radius-sm)', background: activeTab === 'produtos' ? 'var(--bg-elevated)' : 'transparent', color: activeTab === 'produtos' ? 'var(--primary)' : 'var(--text-main)', fontWeight: '600' }}
-          >
-            Produtos {totalCartCount > 0 ? `(${totalCartCount})` : ''}
-          </button>
-          <button 
-            onClick={() => handleNavClick('pacotes')}
-            style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 'var(--radius-sm)', background: activeTab === 'pacotes' ? 'var(--bg-elevated)' : 'transparent', color: activeTab === 'pacotes' ? 'var(--primary)' : 'var(--text-main)', fontWeight: '600' }}
-          >
-            Planos
-          </button>
-          {isSubscribed && (
-            <button 
-              onClick={() => handleNavClick('progresso')}
-              style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 'var(--radius-sm)', background: activeTab === 'progresso' ? 'var(--bg-elevated)' : 'transparent', color: 'var(--primary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}
-            >
-              <Activity size={18} /> Meu Progresso
+          <button onClick={() => handleNavClick('servicos')} style={{ ...navBtn(false), textAlign: 'left', padding: '0.5rem 0' }}>Serviços</button>
+          <button onClick={() => handleNavClick('produtos')} style={{ ...navBtn(false), textAlign: 'left', padding: '0.5rem 0' }}>Produtos</button>
+          <button onClick={() => handleNavClick('pacotes')} style={{ ...navBtn(false), textAlign: 'left', padding: '0.5rem 0' }}>Compra de pacotes</button>
+          {user && (
+            <button onClick={() => handleNavClick('progresso')} style={{ ...navBtn(false), textAlign: 'left', padding: '0.5rem 0', color: '#E5007E' }}>
+              Seu progresso
             </button>
           )}
         </div>
       )}
 
-      {/* CSS Helper for Responsive Navigation */}
       <style>{`
         @media (max-width: 860px) {
-          .desktop-nav {
-            display: none !important;
-          }
-          .mobile-toggle {
-            display: flex !important;
-          }
-          .hide-mobile {
-            display: none !important;
-          }
+          .desktop-nav { display: none !important; }
+          .mobile-toggle { display: flex !important; }
+          .hide-mobile { display: none !important; }
         }
       `}</style>
     </header>

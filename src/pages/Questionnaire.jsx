@@ -1,361 +1,561 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, HeartPulse, Watch, CheckCircle2, ChevronRight, ChevronLeft, Sparkles, Dumbbell, Home as HomeIcon, Layers } from 'lucide-react';
+import {
+  User, Dumbbell, Utensils, CheckCircle2, ChevronRight, ChevronLeft, Sparkles, Home as HomeIcon, Layers
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { generateFitLadyReply } from '../lib/fitladyAi';
 
-export const Questionnaire = ({ setActiveTab }) => {
-  const { saveQuestionnaire, questionnaireData } = useAuth();
+const WEEK_DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+
+const emptyTreino = {
+  weight: '',
+  height: '',
+  age: '',
+  gymExperience: '',
+  goal: 'emagrecimento',
+  goalOther: '',
+  trainingDays: [],
+  workoutLocation: 'academia',
+  homeDays: [],
+  extraActivities: '',
+  observation: ''
+};
+
+const emptyNutri = {
+  dietExperience: '',
+  eatingHabits: '',
+  sleep: '',
+  budgetCeiling: '',
+  intoleranceAllergy: '',
+  preferencesKeep: '',
+  undesiredFoods: '',
+  medicalReportName: '',
+  medicalReportData: ''
+};
+
+export const Questionnaire = ({ setActiveTab, questionnaireType = 'treino' }) => {
+  const { saveQuestionnaire, questionnaireData, activePackage } = useAuth();
+  const isNutri = questionnaireType === 'nutricao';
   const [currentStep, setCurrentStep] = useState(1);
-  const [submitted, setSubmitted] = useState(Boolean(questionnaireData));
-
-  const [formData, setFormData] = useState({
-    age: questionnaireData?.age || '28',
-    weight: questionnaireData?.weight || '63.5',
-    height: questionnaireData?.height || '165',
-    goal: questionnaireData?.goal || 'emagrecimento',
-    workoutLocation: questionnaireData?.workoutLocation || 'academia',
-    weeklyDays: questionnaireData?.weeklyDays || '4',
-    smartwatch: questionnaireData?.smartwatch || 'apple_watch',
-    dietaryRestrictions: questionnaireData?.dietaryRestrictions || '',
-    healthNotes: questionnaireData?.healthNotes || ''
+  const [submitted, setSubmitted] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiReply, setAiReply] = useState(questionnaireData?.aiReply || null);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [formData, setFormData] = useState(() => {
+    if (questionnaireData?.type === questionnaireType) {
+      return { ...(isNutri ? emptyNutri : emptyTreino), ...questionnaireData };
+    }
+    return isNutri ? { ...emptyNutri } : { ...emptyTreino };
   });
 
-  const goals = [
-    { id: 'emagrecimento', label: 'Perda de Gordura & Definição', desc: 'Déficit calórico planejado com preservação de massa magra.' },
-    { id: 'hipertrofia', label: 'Ganho de Massa Muscular / Glúteos', desc: 'Estímulo de volume e suporte hipercalórico balanceado.' },
-    { id: 'manutencao', label: 'Saúde Integral & Disposição', desc: 'Manutenção de peso e otimização metabólica e hormonal.' },
-    { id: 'condicionamento', label: 'Condicionamento & Performance', desc: 'Resistência cardiovascular e fortalecimento articular.' }
-  ];
+  const totalSteps = isNutri ? 2 : 3;
 
-  const locations = [
-    { id: 'academia', label: 'Academia', desc: 'Equipamentos completos de musculação.', icon: Dumbbell },
-    { id: 'casa', label: 'Em Casa', desc: 'Treinos funcionais com halteres, elásticos e peso corporal.', icon: HomeIcon },
-    { id: 'hibrido', label: 'Híbrido', desc: 'Combinação de academia e treinos caseiros na semana.', icon: Layers }
-  ];
-
-  const handleNextStep = (e) => {
-    e.preventDefault();
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      saveQuestionnaire(formData);
-      setSubmitted(true);
-      try {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      } catch (err) {
-        console.warn('Confetti error:', err);
-      }
-    }
-  };
-
-  const handlePrevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  if (submitted) {
+  if (!activePackage) {
     return (
       <div className="container" style={{ padding: '80px 24px', textAlign: 'center' }}>
-        <div className="glass-card animate-fade-in" style={{
-          maxWidth: '640px',
-          margin: '0 auto',
-          padding: '48px 36px',
-          borderColor: 'var(--primary)'
-        }}>
-          <div style={{
-            width: '68px',
-            height: '68px',
-            borderRadius: '50%',
-            background: 'var(--secondary-green-light)',
-            color: 'var(--secondary-green)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 20px auto'
-          }}>
-            <CheckCircle2 size={38} />
-          </div>
-
-          <h1 style={{ fontSize: '2rem', marginBottom: '12px' }}>Anamnese Registrada com Sucesso!</h1>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7', marginBottom: '32px' }}>
-            Nossos profissionais e sistema inteligente calibraram seu plano com base nas suas respostas. Acesse seu painel de acompanhamento para ver a evolução das métricas.
+        <div className="glass-card" style={{ maxWidth: '560px', margin: '0 auto', padding: '40px' }}>
+          <h2 style={{ marginBottom: '12px' }}>Escolha um pacote</h2>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7', marginBottom: '24px' }}>
+            Selecione um pacote para responder o questionário.
           </p>
-
-          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button 
-              onClick={() => setActiveTab('progresso')} 
-              className="btn-primary" 
-              style={{ padding: '14px 30px' }}
-            >
-              Acessar Meu Painel de Progresso <ChevronRight size={18} />
-            </button>
-            <button 
-              onClick={() => setSubmitted(false)} 
-              className="btn-secondary" 
-              style={{ padding: '14px 24px' }}
-            >
-              Editar Respostas
-            </button>
-          </div>
+          <button
+            onClick={() => setActiveTab('pacotes')}
+            className="btn-primary"
+          >
+            Ir para pacotes
+          </button>
         </div>
       </div>
     );
   }
 
+  const toggleDay = (field, day) => {
+    setFormData((prev) => {
+      const list = prev[field] || [];
+      return {
+        ...prev,
+        [field]: list.includes(day) ? list.filter((d) => d !== day) : [...list, day]
+      };
+    });
+  };
+
+  const validateStep = () => {
+    if (isNutri) {
+      if (currentStep === 1) {
+        if (!formData.dietExperience || !formData.eatingHabits || !formData.sleep || !formData.budgetCeiling) {
+          return 'Preencha todas as perguntas desta etapa.';
+        }
+      }
+      if (currentStep === 2) {
+        if (!formData.intoleranceAllergy || !formData.preferencesKeep || !formData.undesiredFoods) {
+          return 'Preencha intolerâncias, preferências e alimentos indesejados.';
+        }
+        if (!formData.medicalReportName) {
+          return 'Anexe o laudo médico (obrigatório).';
+        }
+      }
+      return '';
+    }
+
+    if (currentStep === 1) {
+      if (!formData.weight || !formData.height || !formData.age) {
+        return 'Preencha peso, altura e idade.';
+      }
+    }
+    if (currentStep === 2) {
+      if (!formData.gymExperience) return 'Informe sua experiência com academia e regularidade.';
+      if (formData.goal === 'outros' && !formData.goalOther.trim()) {
+        return 'Descreva seu objetivo em “Outros”.';
+      }
+      if (!formData.trainingDays.length) {
+        return 'Selecione os dias da semana em que poderá treinar.';
+      }
+    }
+    if (currentStep === 3) {
+      if (formData.workoutLocation === 'hibrido' && !formData.homeDays.length) {
+        return 'No treino híbrido, informe quais dias serão em casa.';
+      }
+    }
+    return '';
+  };
+
+  const handleNext = (e) => {
+    e.preventDefault();
+    const err = validateStep();
+    if (err) {
+      setErrorMsg(err);
+      return;
+    }
+    setErrorMsg('');
+
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1);
+      return;
+    }
+
+    const payload = { ...formData, type: questionnaireType };
+    const reply = generateFitLadyReply(payload);
+    setAnalyzing(true);
+    setSubmitted(true);
+    setAiReply(null);
+
+    window.setTimeout(() => {
+      saveQuestionnaire({ ...payload, aiReply: reply });
+      setAiReply(reply);
+      setAnalyzing(false);
+      try {
+        confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
+      } catch (_) { /* ignore */ }
+    }, 1400);
+  };
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData((prev) => ({
+        ...prev,
+        medicalReportName: file.name,
+        medicalReportData: typeof reader.result === 'string' ? reader.result.slice(0, 200) + '…' : ''
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  if (submitted) {
+    return (
+      <div className="container" style={{ padding: '60px 24px' }}>
+        <div className="glass-card animate-fade-in" style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 32px' }}>
+          {analyzing || !aiReply ? (
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+              <div style={{
+                width: '64px', height: '64px', borderRadius: '50%',
+                background: 'rgba(229,0,126,0.1)', color: '#E5007E',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+              }}>
+                <Sparkles size={28} className="ai-spin" />
+              </div>
+              <h1 style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: '2rem', marginBottom: '10px' }}>
+                FitLady IA analisando…
+              </h1>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                Cruzando suas respostas com o protocolo FitLady.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                <div style={{
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  background: 'var(--secondary-green-light)', color: 'var(--secondary-green)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
+                }}>
+                  <CheckCircle2 size={34} />
+                </div>
+                <p style={{
+                  color: '#E5007E',
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  fontWeight: 700,
+                  marginBottom: '8px'
+                }}>
+                  Resposta da FitLady IA
+                </p>
+                <h1 style={{
+                  fontFamily: "'Instrument Serif', Georgia, serif",
+                  fontSize: 'clamp(1.8rem, 4vw, 2.4rem)',
+                  marginBottom: '8px',
+                  letterSpacing: '-0.02em'
+                }}>
+                  {aiReply.title}
+                </h1>
+                <p style={{ color: '#6F6F6F', fontSize: '0.92rem' }}>{aiReply.summaryLine}</p>
+              </div>
+
+              <div style={{
+                background: '#FAFAF8',
+                border: '1px solid rgba(229,0,126,0.2)',
+                borderRadius: '24px',
+                padding: '1.5rem 1.35rem',
+                marginBottom: '1.25rem',
+                textAlign: 'left'
+              }}>
+                <p style={{ color: '#000', lineHeight: 1.75, margin: 0, fontSize: '1.02rem' }}>
+                  {aiReply.body}
+                </p>
+              </div>
+
+              {aiReply.tips?.length > 0 && (
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: '0 0 1.75rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  textAlign: 'left'
+                }}>
+                  {aiReply.tips.map((tip) => (
+                    <li key={tip} style={{
+                      display: 'flex',
+                      gap: '10px',
+                      alignItems: 'flex-start',
+                      color: '#6F6F6F',
+                      fontSize: '0.94rem',
+                      lineHeight: 1.5
+                    }}>
+                      <Sparkles size={16} color="#E5007E" style={{ flexShrink: 0, marginTop: 3 }} />
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <button onClick={() => setActiveTab('progresso')} className="btn-primary" style={{ padding: '14px 28px' }}>
+                  Ir para seu progresso <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <style>{`
+          @keyframes ai-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.12); opacity: 0.7; }
+          }
+          .ai-spin { animation: ai-pulse 1.1s ease-in-out infinite; }
+        `}</style>
+      </div>
+    );
+  }
+
+  const DayChips = ({ field, selected }) => (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+      {WEEK_DAYS.map((day) => {
+        const on = selected.includes(day);
+        return (
+          <button
+            key={day}
+            type="button"
+            onClick={() => toggleDay(field, day)}
+            style={{
+              padding: '8px 14px',
+              borderRadius: 'var(--radius-full)',
+              border: on ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
+              background: on ? 'var(--primary-light)' : 'transparent',
+              color: on ? 'var(--primary)' : 'var(--text-secondary)',
+              fontWeight: '600',
+              fontSize: '0.85rem'
+            }}
+          >
+            {day}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="container" style={{ padding: '60px 24px' }}>
-      
-      {/* Header */}
       <div className="section-header">
-        <span className="badge badge-pink">Etapa de Avaliação</span>
-        <h1 className="section-title">Anamnese Física & Nutricional</h1>
+        <h1 className="section-title">
+          {isNutri ? 'Questionário de nutrição' : 'Questionário de treino'}
+        </h1>
         <p className="section-subtitle">
-          Suas respostas determinam a prescrição do seu treino e a distribuição exata dos seus macronutrientes.
+          Responda com sinceridade para boa adequação do serviço.
         </p>
       </div>
 
-      <div className="glass-card animate-fade-in" style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 32px' }}>
-        
-        {/* Step Progress Indicator */}
-        <div style={{ marginBottom: '36px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: currentStep >= 1 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-              1. Medidas Básicas
-            </span>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: currentStep >= 2 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-              2. Metas & Rotina
-            </span>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: currentStep >= 3 ? 'var(--primary)' : 'var(--text-secondary)' }}>
-              3. Saúde & Wearables
-            </span>
+      <div className="glass-card animate-fade-in" style={{ maxWidth: '740px', margin: '0 auto', padding: '40px 32px' }}>
+        <div style={{ marginBottom: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.82rem', fontWeight: '600', gap: '8px', flexWrap: 'wrap' }}>
+            {isNutri ? (
+              <>
+                <span style={{ color: currentStep >= 1 ? 'var(--primary)' : 'var(--text-secondary)' }}>1. Histórico & rotina</span>
+                <span style={{ color: currentStep >= 2 ? 'var(--primary)' : 'var(--text-secondary)' }}>2. Preferências & laudo</span>
+              </>
+            ) : (
+              <>
+                <span style={{ color: currentStep >= 1 ? 'var(--primary)' : 'var(--text-secondary)' }}>1. Medidas básicas</span>
+                <span style={{ color: currentStep >= 2 ? 'var(--primary)' : 'var(--text-secondary)' }}>2. Metas & rotina</span>
+                <span style={{ color: currentStep >= 3 ? 'var(--primary)' : 'var(--text-secondary)' }}>3. Local & observações</span>
+              </>
+            )}
           </div>
-
-          <div style={{ width: '100%', height: '4px', background: 'var(--bg-elevated)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{
-              width: `${(currentStep / 3) * 100}%`,
-              height: '100%',
-              background: 'var(--primary)',
-              transition: 'width 0.3s ease'
-            }} />
+          <div style={{ width: '100%', height: '4px', background: 'var(--bg-elevated)', borderRadius: '2px' }}>
+            <div style={{ width: `${(currentStep / totalSteps) * 100}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.3s' }} />
           </div>
         </div>
 
-        <form onSubmit={handleNextStep}>
-          
-          {/* STEP 1: Medidas Corporais Básicas */}
-          {currentStep === 1 && (
-            <div className="animate-fade-in">
-              <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <User size={20} color="var(--primary)" /> Dados Fisiológicos Básicos
+        {errorMsg && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)',
+            color: '#f87171', padding: '12px 14px', borderRadius: 'var(--radius-sm)', marginBottom: '18px', fontSize: '0.88rem'
+          }}>
+            {errorMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleNext}>
+          {!isNutri && currentStep === 1 && (
+            <div>
+              <h2 style={{ fontSize: '1.3rem', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={20} color="var(--primary)" /> Medidas básicas
               </h2>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
                 <div className="form-group">
-                  <label className="form-label">Idade (anos)</label>
-                  <input 
-                    type="number" 
-                    required 
-                    className="form-input" 
-                    placeholder="Ex: 28" 
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                  />
+                  <label className="form-label">Peso (kg)</label>
+                  <input type="number" step="0.1" className="form-input" placeholder="Informe seu peso" value={formData.weight} onChange={(e) => setFormData({ ...formData, weight: e.target.value })} />
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Peso Atual (kg)</label>
-                  <input 
-                    type="number" 
-                    step="0.1" 
-                    required 
-                    className="form-input" 
-                    placeholder="Ex: 63.5" 
-                    value={formData.weight}
-                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                  />
-                </div>
-
                 <div className="form-group">
                   <label className="form-label">Altura (cm)</label>
-                  <input 
-                    type="number" 
-                    required 
-                    className="form-input" 
-                    placeholder="Ex: 165" 
-                    value={formData.height}
-                    onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                  />
+                  <input type="number" className="form-input" placeholder="Informe sua altura" value={formData.height} onChange={(e) => setFormData({ ...formData, height: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Idade</label>
+                  <input type="number" className="form-input" placeholder="Informe sua idade" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} />
                 </div>
               </div>
             </div>
           )}
 
-          {/* STEP 2: Objetivo & Rotina */}
-          {currentStep === 2 && (
-            <div className="animate-fade-in">
-              <h2 style={{ fontSize: '1.4rem', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <HeartPulse size={20} color="var(--primary)" /> Objetivo & Rotina de Treino
-              </h2>
+          {!isNutri && currentStep === 2 && (
+            <div>
+              <h2 style={{ fontSize: '1.3rem', marginBottom: '18px' }}>Metas e rotina</h2>
 
-              {/* Goal Cards */}
-              <div style={{ marginBottom: '24px' }}>
-                <label className="form-label" style={{ marginBottom: '10px' }}>Seu Objetivo Principal</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-                  {goals.map(g => (
-                    <div 
+              <div className="form-group">
+                <label className="form-label">Experiência com academia e regularidade de treinos</label>
+                <textarea
+                  rows="3"
+                  className="form-textarea"
+                  placeholder="Ex: treino há 2 anos, 3x por semana, parei 6 meses..."
+                  value={formData.gymExperience}
+                  onChange={(e) => setFormData({ ...formData, gymExperience: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Objetivo principal</label>
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  {[
+                    { id: 'emagrecimento', label: 'Perda de gordura & definição' },
+                    { id: 'hipertrofia', label: 'Ganho de massa muscular' },
+                    { id: 'manutencao', label: 'Saúde integral & disposição' },
+                    { id: 'condicionamento', label: 'Condicionamento & performance' },
+                    { id: 'outros', label: 'Outros' }
+                  ].map((g) => (
+                    <button
                       key={g.id}
+                      type="button"
                       onClick={() => setFormData({ ...formData, goal: g.id })}
                       style={{
-                        padding: '16px',
-                        borderRadius: 'var(--radius-sm)',
-                        background: formData.goal === g.id ? 'var(--primary-light)' : 'rgba(255,255,255,0.03)',
-                        border: formData.goal === g.id ? '1.5px solid var(--primary)' : '1px solid var(--border-subtle)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
+                        textAlign: 'left',
+                        padding: '12px 14px',
+                        borderRadius: '16px',
+                        border: formData.goal === g.id ? '1.5px solid #E5007E' : '1px solid rgba(0,0,0,0.1)',
+                        background: formData.goal === g.id ? 'rgba(229,0,126,0.08)' : '#fff',
+                        color: formData.goal === g.id ? '#E5007E' : '#000',
+                        fontWeight: '600',
+                        cursor: 'pointer'
                       }}
                     >
-                      <div style={{ fontWeight: '700', fontSize: '0.92rem', color: formData.goal === g.id ? 'var(--primary)' : '#fff', marginBottom: '4px' }}>
-                        {g.label}
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                        {g.desc}
-                      </div>
-                    </div>
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+                {formData.goal === 'outros' && (
+                  <input
+                    type="text"
+                    className="form-input"
+                    style={{ marginTop: '10px' }}
+                    placeholder="Escreva seu próprio objetivo"
+                    value={formData.goalOther}
+                    onChange={(e) => setFormData({ ...formData, goalOther: e.target.value })}
+                  />
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Frequência desejada — quais dias da semana poderá treinar? *</label>
+                <DayChips field="trainingDays" selected={formData.trainingDays} />
+              </div>
+            </div>
+          )}
+
+          {!isNutri && currentStep === 3 && (
+            <div>
+              <h2 style={{ fontSize: '1.3rem', marginBottom: '18px' }}>Onde você irá treinar</h2>
+              <div className="form-group">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                  {[
+                    { id: 'academia', label: 'Academia', icon: Dumbbell },
+                    { id: 'casa', label: 'Em casa', icon: HomeIcon },
+                    { id: 'hibrido', label: 'Híbrido', icon: Layers }
+                  ].map((loc) => (
+                    <button
+                      key={loc.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, workoutLocation: loc.id })}
+                      style={{
+                        padding: '14px',
+                        borderRadius: '16px',
+                        border: formData.workoutLocation === loc.id ? '1.5px solid #E5007E' : '1px solid rgba(0,0,0,0.1)',
+                        background: formData.workoutLocation === loc.id ? 'rgba(229,0,126,0.08)' : '#fff',
+                        color: formData.workoutLocation === loc.id ? '#E5007E' : '#000',
+                        fontWeight: '600',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <loc.icon size={20} color={formData.workoutLocation === loc.id ? '#E5007E' : '#6F6F6F'} />
+                      {loc.label}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Location Cards */}
-              <div style={{ marginBottom: '24px' }}>
-                <label className="form-label" style={{ marginBottom: '10px' }}>Onde Você Irá Treinar?</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                  {locations.map(loc => {
-                    const IconComponent = loc.icon;
-                    return (
-                      <div 
-                        key={loc.id}
-                        onClick={() => setFormData({ ...formData, workoutLocation: loc.id })}
-                        style={{
-                          padding: '16px',
-                          borderRadius: 'var(--radius-sm)',
-                          background: formData.workoutLocation === loc.id ? 'var(--primary-light)' : 'rgba(255,255,255,0.03)',
-                          border: formData.workoutLocation === loc.id ? '1.5px solid var(--primary)' : '1px solid var(--border-subtle)',
-                          cursor: 'pointer',
-                          textAlign: 'center',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        <IconComponent size={22} color={formData.workoutLocation === loc.id ? 'var(--primary)' : 'var(--text-secondary)'} style={{ margin: '0 auto 8px auto' }} />
-                        <div style={{ fontWeight: '700', fontSize: '0.9rem', color: '#fff' }}>{loc.label}</div>
-                      </div>
-                    );
-                  })}
+              {formData.workoutLocation === 'hibrido' && (
+                <div className="form-group">
+                  <label className="form-label">Quais dias da semana serão em casa? *</label>
+                  <DayChips field="homeDays" selected={formData.homeDays} />
                 </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label">Atividades extras</label>
+                <textarea
+                  rows="2"
+                  className="form-textarea"
+                  placeholder="Ex: crossfit às terças, corrida no domingo..."
+                  value={formData.extraActivities}
+                  onChange={(e) => setFormData({ ...formData, extraActivities: e.target.value })}
+                />
               </div>
 
-              {/* Weekly Days */}
               <div className="form-group">
-                <label className="form-label">Frequência Semanal Desejada</label>
-                <select 
-                  className="form-select"
-                  value={formData.weeklyDays}
-                  onChange={(e) => setFormData({ ...formData, weeklyDays: e.target.value })}
-                >
-                  <option value="3">3 dias por semana (Divisão A/B alternada)</option>
-                  <option value="4">4 dias por semana (Divisão A/B/C recomendada)</option>
-                  <option value="5">5 dias por semana (Divisão A/B/C/D avançada)</option>
-                  <option value="6">6 dias por semana (Alta frequência atlética)</option>
-                </select>
+                <label className="form-label">Observação</label>
+                <textarea
+                  rows="3"
+                  className="form-textarea"
+                  placeholder="Ex: quarta com horário reduzido, viagem no mês que vem..."
+                  value={formData.observation}
+                  onChange={(e) => setFormData({ ...formData, observation: e.target.value })}
+                />
               </div>
             </div>
           )}
 
-          {/* STEP 3: Saúde, Nutrição & Dispositivos */}
-          {currentStep === 3 && (
-            <div className="animate-fade-in">
-              <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Watch size={20} color="var(--primary)" /> Dispositivos, Restrições & Histórico
+          {isNutri && currentStep === 1 && (
+            <div>
+              <h2 style={{ fontSize: '1.3rem', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Utensils size={20} color="var(--primary)" /> Nutrição
               </h2>
-
               <div className="form-group">
-                <label className="form-label">Dispositivo Wearable / Aplicativo</label>
-                <select 
-                  className="form-select"
-                  value={formData.smartwatch}
-                  onChange={(e) => setFormData({ ...formData, smartwatch: e.target.value })}
-                >
-                  <option value="apple_watch">Apple Watch & Apple Saúde</option>
-                  <option value="garmin">Garmin Connect</option>
-                  <option value="strava">Strava Premium</option>
-                  <option value="outro">Outro Smartwatch / Fitband</option>
-                  <option value="nenhum">Nenhum Dispositivo</option>
-                </select>
+                <label className="form-label">Experiência com dietas e histórico alimentar</label>
+                <textarea rows="3" className="form-textarea" placeholder="Já fez dietas? Como foi?" value={formData.dietExperience} onChange={(e) => setFormData({ ...formData, dietExperience: e.target.value })} />
               </div>
-
               <div className="form-group">
-                <label className="form-label">Preferências ou Intolerâncias Alimentares</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="Ex: Intolerância a lactose, vegetariana, aversão a peixe..."
-                  value={formData.dietaryRestrictions}
-                  onChange={(e) => setFormData({ ...formData, dietaryRestrictions: e.target.value })}
-                />
+                <label className="form-label">Hábitos e rotina alimentar atual</label>
+                <textarea rows="3" className="form-textarea" placeholder="Ex: jantar com amigas toda quinta; comida mexicana toda terça..." value={formData.eatingHabits} onChange={(e) => setFormData({ ...formData, eatingHabits: e.target.value })} />
               </div>
-
               <div className="form-group">
-                <label className="form-label">Observações Médicas, Dores ou Lesões</label>
-                <textarea 
-                  rows="3" 
-                  className="form-textarea" 
-                  placeholder="Ex: Sensibilidade lombar em agachamentos livres, cirurgia no joelho em 2022..."
-                  value={formData.healthNotes}
-                  onChange={(e) => setFormData({ ...formData, healthNotes: e.target.value })}
-                />
+                <label className="form-label">Seu sono</label>
+                <textarea rows="2" className="form-textarea" placeholder="Horário, qualidade, quantas horas..." value={formData.sleep} onChange={(e) => setFormData({ ...formData, sleep: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Teto de gastos (alimentação / suplementos)</label>
+                <input type="text" className="form-input" placeholder="Ex: até R$ 400/mês em mercado + suplementos" value={formData.budgetCeiling} onChange={(e) => setFormData({ ...formData, budgetCeiling: e.target.value })} />
               </div>
             </div>
           )}
 
-          {/* Step Actions */}
+          {isNutri && currentStep === 2 && (
+            <div>
+              <div className="form-group">
+                <label className="form-label">Intolerância / alergia</label>
+                <textarea rows="2" className="form-textarea" placeholder="Ex: lactose, glúten, amendoim..." value={formData.intoleranceAllergy} onChange={(e) => setFormData({ ...formData, intoleranceAllergy: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Preferências / alimentos que não quer deixar de consumir</label>
+                <textarea rows="2" className="form-textarea" placeholder="Ex: chocolate, pão, café..." value={formData.preferencesKeep} onChange={(e) => setFormData({ ...formData, preferencesKeep: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Alimentos indesejados</label>
+                <textarea rows="2" className="form-textarea" placeholder="Alimentos que você não quer na dieta" value={formData.undesiredFoods} onChange={(e) => setFormData({ ...formData, undesiredFoods: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Observações médicas — anexar laudo *</label>
+                <input type="file" accept=".pdf,image/*" className="form-input" onChange={handleFile} />
+                {formData.medicalReportName && (
+                  <p style={{ marginTop: '8px', fontSize: '0.85rem', color: 'var(--secondary-green)' }}>
+                    Arquivo anexado: {formData.medicalReportName}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginTop: '32px',
-            paddingTop: '20px',
-            borderTop: '1px solid var(--border-subtle)'
+            display: 'flex', justifyContent: 'space-between', marginTop: '28px',
+            paddingTop: '20px', borderTop: '1px solid var(--border-subtle)'
           }}>
             {currentStep > 1 ? (
-              <button
-                type="button"
-                onClick={handlePrevStep}
-                className="btn-secondary"
-                style={{ padding: '10px 20px', fontSize: '0.9rem' }}
-              >
+              <button type="button" onClick={() => { setErrorMsg(''); setCurrentStep(currentStep - 1); }} className="btn-secondary" style={{ padding: '10px 20px' }}>
                 <ChevronLeft size={16} /> Voltar
               </button>
             ) : <div />}
-
-            <button
-              type="submit"
-              className="btn-primary"
-              style={{ padding: '12px 28px', fontSize: '0.95rem' }}
-            >
-              {currentStep === 3 ? (
-                <>Salvar e Gerar Meu Plano <Sparkles size={16} /></>
-              ) : (
-                <>Continuar <ChevronRight size={16} /></>
-              )}
+            <button type="submit" className="btn-primary" style={{ padding: '12px 28px' }}>
+              {currentStep === totalSteps ? <>Enviar <Sparkles size={16} /></> : <>Continuar <ChevronRight size={16} /></>}
             </button>
           </div>
-
         </form>
-
       </div>
     </div>
   );

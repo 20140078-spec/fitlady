@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 72" fill="none">
+  <rect x="2" y="10" width="52" height="52" rx="14" fill="#E5007E"/>
+  <path d="M18 28h22M18 36h16M18 44h20" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M42 22l6 8-6 8" stroke="#ABFE2A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="68" y="48" font-family="Instrument Serif, Georgia, serif" font-size="38" font-weight="400" letter-spacing="-1">
+    <tspan fill="#000000">Fit</tspan><tspan fill="#E5007E">Lady</tspan>
+  </text>
+</svg>
